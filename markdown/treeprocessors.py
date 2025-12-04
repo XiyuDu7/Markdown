@@ -152,23 +152,25 @@ class InlineProcessor(Treeprocessor):
         Returns: list with ElementTree elements with applied inline patterns.
 
         """
+        def _smart_append(node, attr, text):
+            """Helper to safely append text to an element's text or tail."""
+            current_val = getattr(node, attr)
+            if current_val:
+                setattr(node, attr, current_val + text)
+            else:
+                setattr(node, attr, text)
+                
         def linkText(text):
-            if text:
-                if result:
-                    if result[-1].tail:
-                        result[-1].tail += text
-                    else:
-                        result[-1].tail = text
-                elif not isText:
-                    if parent.tail:
-                        parent.tail += text
-                    else:
-                        parent.tail = text
-                else:
-                    if parent.text:
-                        parent.text += text
-                    else:
-                        parent.text = text
+            if not text:
+                return
+
+            # Determine target and attribute based on state
+            if result:
+                _smart_append(result[-1][0], 'tail', text)
+            elif not isText:
+                _smart_append(parent, 'tail', text)
+            else:
+                _smart_append(parent, 'text', text)
         result = []
         strartIndex = 0
         while data:
